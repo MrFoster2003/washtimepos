@@ -32,6 +32,7 @@ Deployed on Vercel (frontend + serverless API) with Supabase as the database and
 Manages the full operation of a car wash: sales, employees, commissions, shifts, inventory, costs, and reporting.
 
 ### Core principles
+
 - Every feature must serve an operational need — no bloat
 - Data integrity over convenience — never skip validations
 - Role-based access is non-negotiable — every route is protected
@@ -42,6 +43,7 @@ Manages the full operation of a car wash: sales, employees, commissions, shifts,
 ## 2. Business Model
 
 ### How a car wash operates
+
 - A **shift** is opened by a cashier or supervisor (24/7 operation, one shift open at a time per company)
 - A **client** arrives with a **vehicle** (identified by license plate)
 - The cashier registers a **sale** with one or more **service lines** and/or **product lines**
@@ -52,11 +54,13 @@ Manages the full operation of a car wash: sales, employees, commissions, shifts,
 - **Promotions/discounts** are applied at the invoice level (not per line) — employee commissions are always calculated on base price, never on discounted price
 
 ### Commission rules
+
 1. Check if the employee has a **special agreement** for this service (`commissions_employee`) → use it if exists
 2. Otherwise use the **base commission** for the service (`commissions_service`)
 3. Commission is always calculated on `unit_price` (base price), regardless of any discounts on the invoice
 
 ### Inventory flow
+
 - **Equipment** (pressure washers, compressors): tracked for existence and status only, no stock movement
 - **Supplies** (soap, sponges, wax): manual movements — staff registers usage or purchase when needed
 - **Sale products** (drinks, snacks, oil): added to a sale invoice or sold standalone; each sale line auto-triggers an inventory movement of type SALE
@@ -81,11 +85,13 @@ Manages the full operation of a car wash: sales, employees, commissions, shifts,
 | Toasts | Sonner | latest |
 
 ### shadcn/ui components already installed
+
 The following components are already available from shadcn/ui — never recreate them:
 button, input, table, dropdown-menu, alert, card, tabs, select, textarea,
 checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 
 ### Key rules for the stack
+
 - Use **App Router** only — no Pages Router
 - Use **Server Components** by default — add `'use client'` only when strictly necessary (interactivity, hooks, browser APIs)
 - shadcn/ui components are the base — wrap or extend them, never replace them
@@ -106,6 +112,7 @@ checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 ### Module: Platform / White Label
 
 #### `companies`
+
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
@@ -118,6 +125,7 @@ checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 | created_at | timestamp | |
 
 #### `plans`
+
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
@@ -136,6 +144,7 @@ checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 | created_at | timestamp | |
 
 #### `subscriptions`
+
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
@@ -159,6 +168,7 @@ checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 ### Module: Users & Access
 
 #### `roles`
+
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
@@ -168,6 +178,7 @@ checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 > Roles are seeded on install. Do not allow creation of new roles from the UI.
 
 #### `users`
+
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | Matches Supabase Auth UID |
@@ -185,6 +196,7 @@ checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 ### Module: Service Catalog
 
 #### `vehicle_types`
+
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
@@ -193,6 +205,7 @@ checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 | active | boolean | |
 
 #### `services`
+
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
@@ -203,6 +216,7 @@ checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 | active | boolean | |
 
 #### `services_vehicle`
+
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
@@ -218,6 +232,7 @@ checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 ### Module: Commissions
 
 #### `commissions_service`
+
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
@@ -228,6 +243,7 @@ checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 | active | boolean | |
 
 #### `commissions_employee`
+
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
@@ -244,6 +260,7 @@ checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 ### Module: Clients & Vehicles
 
 #### `vehicles`
+
 | Field | Type | Notes |
 |---|---|---|
 | plate | string PK | License plate — main identifier |
@@ -268,6 +285,7 @@ checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 ### Module: Promotions & Discounts
 
 #### `promotions`
+
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
@@ -290,6 +308,7 @@ checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 > Employee commission is ALWAYS calculated on base price — never on the discounted price.
 
 #### `sale_promotions`
+
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
@@ -306,6 +325,7 @@ checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 ### Module: Inventory
 
 #### `equipment`
+
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
@@ -323,6 +343,7 @@ checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 > Equipment has NO stock movement — tracked for existence and status only.
 
 #### `inventory_categories`
+
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
@@ -331,6 +352,7 @@ checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 | active | boolean | |
 
 #### `inventory`
+
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
@@ -348,6 +370,7 @@ checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 | updated_at | timestamp | |
 
 #### `inventory_movements`
+
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
@@ -366,6 +389,7 @@ checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 ### Module: POS / Operations
 
 #### `shifts`
+
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
@@ -387,6 +411,7 @@ checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 > Only ONE shift with status = OPEN is allowed per company at any time.
 
 #### `sales`
+
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
@@ -402,6 +427,7 @@ checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 | updated_at | timestamp | |
 
 #### `sale_details`
+
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
@@ -420,6 +446,7 @@ checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 > quantity applies to both services and products (e.g. 5 sodas = quantity 5, one line).
 
 #### `payments`
+
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
@@ -432,6 +459,7 @@ checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 > Separate from sales to support pay-before and pay-after flows.
 
 #### `commissions_generated`
+
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
@@ -450,6 +478,7 @@ checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 ### Module: Attendance
 
 #### `attendance`
+
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
@@ -471,6 +500,7 @@ checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 ### Module: Operating Costs
 
 #### `cost_categories`
+
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
@@ -480,6 +510,7 @@ checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 | active | boolean | |
 
 #### `operating_costs`
+
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
@@ -534,6 +565,7 @@ checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 ## 5. Authentication & Roles
 
 ### Auth flow
+
 1. User logs in with email + password via Supabase Auth
 2. On login, fetch `users` record matching `auth.uid()` → get `role_id` and `company_id`
 3. Store `{ role, company_id, user_id, name }` in Zustand `auth.store`
@@ -565,6 +597,7 @@ checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 | Company configuration | ✓ | ✗ | ✗ | ✗ |
 
 ### Middleware logic
+
 ```ts
 // middleware.ts
 const roleRoutes: Record<string, string[]> = {
@@ -581,12 +614,14 @@ const roleRoutes: Record<string, string[]> = {
 ## 6. Route Map
 
 ### Public routes
+
 ```
 /login           → Login (all roles)
 /unauthorized    → Access denied
 ```
 
 ### Admin routes (/admin/*)
+
 ```
 /admin/dashboard      → Overview metrics
 /admin/employees      → List + create/edit/deactivate
@@ -601,6 +636,7 @@ const roleRoutes: Record<string, string[]> = {
 ```
 
 ### Supervisor routes (/supervisor/*)
+
 ```
 /supervisor/dashboard    → Shift overview + today's metrics
 /supervisor/employees    → View + manage employees
@@ -612,6 +648,7 @@ const roleRoutes: Record<string, string[]> = {
 ```
 
 ### Cashier routes (/cashier/*)
+
 ```
 /cashier/pos         → Main POS screen (most critical screen in the app)
 /cashier/shift       → Open / close shift
@@ -620,6 +657,7 @@ const roleRoutes: Record<string, string[]> = {
 ```
 
 ### Employee routes (/employee/*)
+
 ```
 /employee/dashboard  → Own commissions + attendance history
 ```
@@ -629,6 +667,7 @@ const roleRoutes: Record<string, string[]> = {
 ## 7. Design System
 
 ### Colors
+
 ```
 Primary blue:  #2563eb  (Tailwind blue-600)
 White:         #ffffff
@@ -642,16 +681,19 @@ Semantic:
 ```
 
 ### Typography
+
 - Font: **Inter** (loaded via next/font)
 - Scale: Tailwind default (text-xs through text-3xl)
 
 ### Dark mode
+
 - Strategy: `class` in `tailwind.config.ts`
 - Toggle: TopBar button — persists in `localStorage`
 - Default: system preference on first visit
 - All components must work correctly in both modes
 
 ### Components base
+
 shadcn/ui with Nova preset. Extend with Tailwind — never override with inline styles.
 
 ---
@@ -659,15 +701,18 @@ shadcn/ui with Nova preset. Extend with Tailwind — never override with inline 
 ## 8. Component Library
 
 ### Already installed (shadcn/ui) — never recreate these
+
 button, input, table, dropdown-menu, alert, card, tabs, select, textarea,
 checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 
 ### To build on top of shadcn (/components/ui/)
+
 - **Stat.tsx** — Dashboard metric card: label, value, trend, icon
 - **PageHeader.tsx** — Page title + subtitle + optional action button
 - **ConfirmDialog.tsx** — Wraps shadcn Dialog for destructive action confirmations
 
 ### POS-specific (/components/pos/)
+
 - **VehicleSearch.tsx** — Search by plate or create new vehicle
 - **SaleLineItem.tsx** — Single line in the active sale (service or product)
 - **PaymentPanel.tsx** — Payment method selection + confirmation
@@ -675,14 +720,17 @@ checkbox, badge, separator, skeleton, tooltip, dialog, sheet
 - **ExecutorAssigner.tsx** — Assign employee to a completed service line
 
 ### Layout (/components/layout/)
+
 - **Sidebar.tsx** — Role-aware nav (reads role from auth.store, renders allowed links only)
 - **TopBar.tsx** — Company name, user name + role, dark mode toggle
 
 ### Forms (/components/forms/)
+
 Reusable form sections — NOT full pages. Accept `onSubmit` as prop.
 Examples: VehicleForm, EmployeeForm, ServiceForm, PromotionForm, InventoryItemForm
 
 ### Table columns (/components/tables/)
+
 Column definitions per entity for the shadcn Table component.
 Examples: employees.columns.tsx, sales.columns.tsx, inventory.columns.tsx
 
@@ -762,6 +810,7 @@ washtimepos/
 ## 10. Backend Patterns
 
 ### API Route structure
+
 ```ts
 // app/api/[resource]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
@@ -808,6 +857,7 @@ export async function POST(req: NextRequest) {
 ```
 
 ### Standard API response format
+
 ```ts
 // Success
 { data: T, meta?: { total, page, limit } }
@@ -817,6 +867,7 @@ export async function POST(req: NextRequest) {
 ```
 
 ### Service layer pattern
+
 ```ts
 // services/sales.service.ts
 /**
@@ -838,6 +889,7 @@ export async function getSalesByShift(shiftId: string): Promise<Sale[]> {
 ```
 
 ### Commission calculation priority
+
 ```ts
 // When assigning executor_id to a sale_detail:
 // 1. Check commissions_employee for this user + service → use if exists
@@ -847,6 +899,7 @@ export async function getSalesByShift(shiftId: string): Promise<Sale[]> {
 ```
 
 ### Error handling
+
 - Never expose raw DB errors to the client
 - Always log server-side: `console.error('[CONTEXT]', error)`
 - Return human-readable messages in Spanish for UI-facing errors
@@ -857,11 +910,13 @@ export async function getSalesByShift(shiftId: string): Promise<Sale[]> {
 ## 11. Frontend Patterns
 
 ### Data fetching
+
 - Server Components → fetch directly via Supabase admin client
 - Client Components → use service functions from `/services/`
 - Never call Supabase directly from a component
 
 ### Form pattern
+
 ```tsx
 const schema = z.object({ name: z.string().min(1) })
 type FormData = z.infer<typeof schema>
@@ -872,20 +927,25 @@ const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<
 ```
 
 ### Three required UI states
+
 Every data-fetching component must handle:
+
 1. **Loading** → shadcn `<Skeleton />`
 2. **Error** → shadcn `<Alert variant="destructive">`
 3. **Empty** → descriptive empty state message
 
 ### Toast notifications
+
 ```ts
 import { toast } from 'sonner'
 toast.success('Sale registered successfully')
 toast.error('Could not save changes')
 ```
+
 Never use `alert()` or `confirm()` — use `<ConfirmDialog>` for destructive actions.
 
 ### POS store (Zustand)
+
 ```ts
 // store/pos.store.ts
 {
@@ -905,6 +965,7 @@ Never use `alert()` or `confirm()` — use `<ConfirmDialog>` for destructive act
 ## 12. Business Logic & Flows
 
 ### POS — Pay before service
+
 ```
 1. Client arrives
 2. Cashier searches/creates vehicle by plate
@@ -918,6 +979,7 @@ Never use `alert()` or `confirm()` — use `<ConfirmDialog>` for destructive act
 ```
 
 ### POS — Pay after service
+
 ```
 1. Client arrives
 2. Cashier creates sale → payment_status = PENDING
@@ -928,12 +990,14 @@ Never use `alert()` or `confirm()` — use `<ConfirmDialog>` for destructive act
 ```
 
 ### Shift flow
+
 ```
 Open:  verify no OPEN shift exists for company → record opened_by, opened_at, opening_cash
 Close: warn if total_unassigned > 0 → compute totals → record closed_by, closed_at
 ```
 
 ### Inventory auto-movement on product sale
+
 ```
 sale_detail has inventory_id set →
   create inventory_movement { type: SALE, quantity: -line.quantity, sale_id }
@@ -942,6 +1006,7 @@ sale_detail has inventory_id set →
 ```
 
 ### Promotion eligibility check (before showing in POS)
+
 ```
 status === ACTIVE
 AND (end_date IS NULL OR end_date >= today)
@@ -953,6 +1018,7 @@ AND (usage_limit IS NULL OR current_uses < usage_limit)
 ## 13. Coding Conventions
 
 ### File naming
+
 ```
 components/  → PascalCase.tsx         (Button.tsx, SaleLineItem.tsx)
 services/    → camelCase.service.ts   (sales.service.ts)
@@ -963,6 +1029,7 @@ api routes/  → route.ts               (app/api/sales/route.ts)
 ```
 
 ### Function naming
+
 ```ts
 // Services: verb + noun
 getSalesByShift(), createSale(), assignExecutor(), calculateCommission()
@@ -975,12 +1042,14 @@ handleSubmit(), handleDelete(), handleAssignExecutor()
 ```
 
 ### TypeScript
+
 - No `any` — ever
 - All parameters and return types explicitly typed
 - `type` for unions/intersections, `interface` for object shapes
 - All types exported from `/types/models.ts`
 
 ### Import order
+
 ```ts
 // 1. React / Next
 import { useState } from 'react'
@@ -1000,6 +1069,7 @@ import type { Sale } from '@/types/models'
 ## 14. Documentation Standard
 
 ### JSDoc — required on all services and API routes
+
 ```ts
 /**
  * Assigns an employee to a service line and auto-generates their commission.
@@ -1015,6 +1085,7 @@ export async function assignExecutor(saleDetailId: string, userId: string) {}
 ```
 
 ### After every session
+
 - Frontend changes → update `/docs/FRONTEND.md`
 - Backend changes → update `/docs/BACKEND.md`
 - See ANTIGRAVITY.md for the exact format required
@@ -1024,11 +1095,13 @@ export async function assignExecutor(saleDetailId: string, userId: string) {}
 ## 15. Security Rules
 
 ### Supabase RLS
+
 - RLS ENABLED on every table — no exceptions
 - All policies filter by `company_id` matching the authenticated user's company
 - Never disable RLS — use admin client in server-side routes instead
 
 ### Environment variables
+
 ```env
 # Public (browser-safe)
 NEXT_PUBLIC_SUPABASE_URL=
@@ -1056,11 +1129,13 @@ JWT_SECRET=
 ## 16. Testing
 
 ### Stack
+
 - **Vitest** — test runner (faster than Jest, native TypeScript support)
 - **Supertest** — HTTP assertions for API routes
 - **@supabase/supabase-js mock** — mock Supabase client to avoid real DB calls in tests
 
 ### Folder structure
+
 ```
 tests/
 ├── setup.ts                  ← Global setup: env vars, Supabase mock
@@ -1080,25 +1155,30 @@ tests/
 ```
 
 ### Coverage required per endpoint
+
 Every endpoint must have tests for all three categories:
 
 **1. Happy path** — request succeeds
+
 - Correct status code (200 or 201)
 - Response body matches expected shape
 - DB operation was called with correct parameters
 
 **2. Auth & authorization failures**
+
 - No session → 401
 - Wrong role → 403 (e.g. CASHIER calling an ADMIN-only route)
 - Cross-company attempt → 403 (user from company A trying to access company B data)
 
 **3. Edge cases & validation**
+
 - Missing required fields → 422 with field errors
 - Invalid types (string where int expected) → 422
 - Business rule violations (e.g. opening a shift when one is already open) → 400
 - Non-existent resource (sale not found) → 404
 
 ### Test file pattern
+
 ```ts
 // tests/api/sales.test.ts
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -1138,6 +1218,7 @@ describe('POST /api/sales', () => {
 ```
 
 ### Running tests
+
 ```bash
 # Run all tests
 npx vitest run
@@ -1153,6 +1234,7 @@ npx vitest run --coverage
 ```
 
 ### Rules
+
 - Tests live in `/tests/` — never inside `/app/` or alongside source files
 - Mock Supabase — never call the real DB in tests
 - Every new endpoint must have its test file created in the same session
