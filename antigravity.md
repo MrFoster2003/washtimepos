@@ -372,3 +372,39 @@ Include a `### Tests` section in each entry:
   - Validation: missing plate, empty details, both ids set, quantity < 1
   - Business: 400 no open shift, 400 vehicle not in company
 ```
+
+---
+
+## Task Management Rules
+
+### How to work with PLAN.md
+The file `docs/PLAN.md` contains the full development plan organized in phases and tasks.
+
+**Before starting any session:**
+1. Read `docs/PLAN.md`
+2. Identify the first task that is NOT marked as completed
+3. Only work on what the user explicitly asks for in that session — do not jump ahead
+
+**After completing a task:**
+- Open `docs/PLAN.md`
+- Find the completed task
+- Add `[x]` at the beginning of every line that belongs to that task
+- Example:
+  ```
+  Before:
+  - `lib/validations/shift.schema.ts` — schemas de apertura y cierre
+
+  After:
+  - [x] `lib/validations/shift.schema.ts` — schemas de apertura y cierre
+  ```
+
+**Never:**
+- Mark a task as complete if tests are failing
+- Mark a task as complete if documentation was not updated
+- Skip ahead to a future task without being asked
+- Work on multiple phases in the same session unless explicitly told to
+
+### One task at a time
+Build exactly what is asked. Nothing more.
+If a task requires something from a previous phase that does not exist yet — stop and say so.
+Do not build the dependency automatically without confirmation.
