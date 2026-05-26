@@ -8,19 +8,19 @@
 
 ### 1. Types & enums
 
-- [ ] `types/enums.ts` — All TypeScript enums: Role, SaleStatus, ShiftStatus, MovementType, InventoryType, PromotionStatus, CommissionStatus, EquipmentStatus, Periodicity, PaymentMethod, PromotionType, ValueType, RegistrationType
-- [ ] `types/models.ts` — App-level types built on top of DB types: Sale, SaleDetail, Employee, Vehicle, Shift, etc.
-- [ ] `types/database.types.ts` — Auto-generated from Supabase CLI after schema is created
+- [x] `types/enums.ts` — All TypeScript enums: Role, SaleStatus, ShiftStatus, MovementType, InventoryType, PromotionStatus, CommissionStatus, EquipmentStatus, Periodicity, PaymentMethod, PromotionType, ValueType, RegistrationType
+- [x] `types/models.ts` — App-level types built on top of DB types: Sale, SaleDetail, Employee, Vehicle, Shift, etc.
+- [x] `types/database.types.ts` — Auto-generated from Supabase CLI after schema is created
 
 ### 2. Supabase clients
 
-- [ ] `lib/supabase/client.ts` — Browser client using NEXT_PUBLIC_SUPABASE_ANON_KEY. Used in hooks and client-side services. RLS enforced via user JWT.
-- [ ] `lib/supabase/admin.ts` — Server-only client using SUPABASE_SERVICE_ROLE_KEY. Imported ONLY in API routes. Bypasses RLS — always filter by company_id manually.
+- [x] `lib/supabase/client.ts` — Browser client using NEXT_PUBLIC_SUPABASE_ANON_KEY. Used in hooks and client-side services. RLS enforced via user JWT.
+- [x] `lib/supabase/admin.ts` — Server-only client using SUPABASE_SERVICE_ROLE_KEY. Imported ONLY in API routes. Bypasses RLS — always filter by company_id manually.
 
 ### 3. Auth helper + middleware
 
-- [ ] `lib/auth.ts` — getSessionUser(): reads session from request, returns { id, role, company_id, name } or null
-- [ ] `middleware.ts` — Intercepts every request, checks session and role against route map, redirects to /unauthorized if role does not match
+- [x] `lib/auth.ts` — getSessionUser(): reads session from request, returns { id, role, company_id, name } or null
+- [x] `middleware.ts` — Intercepts every request, checks session and role against route map, redirects to /unauthorized if role does not match
 
 ### 4. Zustand stores
 
