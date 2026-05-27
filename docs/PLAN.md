@@ -51,29 +51,29 @@
 
 ### 8. Layout components
 
-- [ ] `components/layout/Sidebar.tsx` — Role-aware navigation sidebar. Reads role from auth.store and renders only the links allowed for that role. One component handles all roles — no duplicated nav logic.
-- [ ] `components/layout/TopBar.tsx` — Fixed top bar with company name, current user name + role badge, and dark mode toggle. Persists dark mode preference in localStorage.
+- [x] `components/layout/Sidebar.tsx` — Role-aware navigation sidebar. Reads role from auth.store and renders only the links allowed for that role. One component handles all roles — no duplicated nav logic.
+- [x] `components/layout/TopBar.tsx` — Fixed top bar with company name, current user name + role badge, and dark mode toggle. Persists dark mode preference in localStorage.
 
 ### 9. Custom UI components (on top of shadcn)
 
-- [ ] `components/ui/Stat.tsx` — Dashboard metric card. Props: label, value, trend (number with arrow), icon (LucideIcon). Used on all dashboards.
-- [ ] `components/ui/PageHeader.tsx` — Consistent page title block. Props: title, subtitle, optional action button (ReactNode). Used at the top of every page.
-- [ ] `components/ui/ConfirmDialog.tsx` — Wraps shadcn Dialog for destructive action confirmations. Props: open, onConfirm, onCancel, title, description, variant (danger or warning). Used for cancel sale, deactivate employee, delete record, etc.
+- [x] `components/ui/Stat.tsx` — Dashboard metric card. Props: label, value, trend (number with arrow), icon (LucideIcon). Used on all dashboards.
+- [x] `components/ui/PageHeader.tsx` — Consistent page title block. Props: title, subtitle, optional action button (ReactNode). Used at the top of every page.
+- [x] `components/ui/ConfirmDialog.tsx` — Wraps shadcn Dialog for destructive action confirmations. Props: open, onConfirm, onCancel, title, description, variant (danger or warning). Used for cancel sale, deactivate employee, delete record, etc.
 
 ### 10. Login page
 
-- [ ] `app/(auth)/login/page.tsx` — Email + password login form using Supabase Auth. On success: fetches users record, stores session in auth.store, redirects to the correct dashboard based on role.
+- [x] `app/(auth)/login/page.tsx` — Email + password login form using Supabase Auth. On success: fetches users record, stores session in auth.store, redirects to the correct dashboard based on role.
 
 ### 11. Unauthorized page
 
-- [ ] `app/unauthorized/page.tsx` — Simple page shown when a user tries to access a route outside their role. Shows their current role and a button to go back to their dashboard.
+- [x] `app/unauthorized/page.tsx` — Simple page shown when a user tries to access a route outside their role. Shows their current role and a button to go back to their dashboard.
 
 ### 12. Role layouts
 
-- [ ] `app/admin/layout.tsx` — Admin layout with Sidebar and TopBar. Wraps all /admin/* pages.
-- [ ] `app/supervisor/layout.tsx` — Supervisor layout with Sidebar and TopBar. Wraps all /supervisor/* pages.
-- [ ] `app/cashier/layout.tsx` — Cashier layout with Sidebar and TopBar. Wraps all /cashier/* pages.
-- [ ] `app/employee/layout.tsx` — Employee layout with Sidebar and TopBar. Wraps all /employee/* pages.
+- [x] `app/admin/layout.tsx` — Admin layout with Sidebar and TopBar. Wraps all /admin/* pages.
+- [x] `app/supervisor/layout.tsx` — Supervisor layout with Sidebar and TopBar. Wraps all /supervisor/* pages.
+- [x] `app/cashier/layout.tsx` — Cashier layout with Sidebar and TopBar. Wraps all /cashier/* pages.
+- [x] `app/employee/layout.tsx` — Employee layout with Sidebar and TopBar. Wraps all /employee/* pages.
 
 ---
 
