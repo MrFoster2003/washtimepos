@@ -24,19 +24,19 @@
 
 ### 4. Zustand stores
 
-- [ ] `store/auth.store.ts` — Stores authenticated user: { id, name, role, company_id }. Populated on login, cleared on logout.
-- [ ] `store/shift.store.ts` — Stores the current open shift: { id, opened_at, opening_cash, status }. Null if no shift is open.
-- [ ] `store/pos.store.ts` — Stores the sale being built in POS: { vehiclePlate, lines, appliedPromotions, paymentStatus }. Subtotal, totalDiscounts and total are computed — never stored. Resets on sale complete or cancel.
+- [x] `store/auth.store.ts` — Stores authenticated user: { id, name, role, company_id }. Populated on login, cleared on logout.
+- [x] `store/shift.store.ts` — Stores the current open shift: { id, opened_at, opening_cash, status }. Null if no shift is open.
+- [x] `store/pos.store.ts` — Stores the sale being built in POS: { vehiclePlate, lines, appliedPromotions, paymentStatus }. Subtotal, totalDiscounts and total are computed — never stored. Resets on sale complete or cancel.
 
 ### 5. Base hooks
 
-- [ ] `hooks/useAuth.ts` — Returns current user, role and company_id from auth.store
-- [ ] `hooks/useShift.ts` — Returns current open shift from shift.store. Returns null if no shift is open.
-- [ ] `hooks/useDebounce.ts` — Generic debounce hook used for search inputs (300ms default)
+- [x] `hooks/useAuth.ts` — Returns current user, role and company_id from auth.store
+- [x] `hooks/useShift.ts` — Returns current open shift from shift.store. Returns null if no shift is open.
+- [x] `hooks/useDebounce.ts` — Generic debounce hook used for search inputs (300ms default)
 
 ### 6. Utilities
 
-- [ ] `lib/utils.ts` — formatCurrency(amount): formats to COP locale. formatDate(date): formats to readable Spanish date. cn(): Tailwind class merge helper (already included by shadcn).
+- [x] `lib/utils.ts` — formatCurrency(amount): formats to COP locale. formatDate(date): formats to readable Spanish date. formatDateTime(date): date + time. cn(): Tailwind class merge helper (already included by shadcn).
 
 ### 7. Database schema + seed
 
