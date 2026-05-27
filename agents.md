@@ -85,6 +85,12 @@ Route protection: middleware.ts enforces server-side. Each layout adds client-si
 - Database: 25 tables created, RLS configured, seed applied
 - Supabase clients: lib/supabase/client.ts + lib/supabase/admin.ts
 - Types: types/database.types.ts generated from Supabase CLI
+- Types & Enums: types/enums.ts + types/models.ts (Phase 1, Task 1)
+- Auth helper & middleware: lib/auth.ts + middleware.ts (Phase 1, Task 3)
+- Zustand stores: auth.store, shift.store, pos.store (Phase 1, Task 4)
+- Base hooks: useAuth, useShift, useDebounce (Phase 1, Task 5)
+- Utilities: formatCurrency, formatDate, formatDateTime, cn (Phase 1, Task 6)
+- Database types verified: types/database.types.ts exists (83 KB, auto-generated)
 
 ### In progress
 
@@ -92,8 +98,7 @@ Route protection: middleware.ts enforces server-side. Each layout adds client-si
 
 ### Next task
 
-- Phase 1, Task 1: types/enums.ts + types/models.ts
-- Use prompt from docs/PROMPTS.md → Prompt 1.1
+- Phase 1, Task 7: Database schema + seed (supabase/schema.sql + supabase/seed.sql) — still pending
 
 ---
 
