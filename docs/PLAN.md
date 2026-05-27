@@ -83,21 +83,21 @@
 
 ### 13. API routes + tests
 
-- [ ] `app/api/shifts/open/route.ts` — POST. Minimum role: CASHIER. Verifies no OPEN shift exists for the company. Records opened_by, opened_at, opening_cash. Returns created shift.
-- [ ] `app/api/shifts/close/route.ts` — POST. Minimum role: CASHIER. Computes totals from all sales in the shift. Warns if total_unassigned > 0. Records closed_by, closed_at. Returns closed shift with summary.
-- [ ] `tests/api/shifts.test.ts` — Full coverage: happy path, 401/403/cross-company, validation (missing opening_cash), business rules (shift already open, no open shift to close).
+- [x] `app/api/shifts/open/route.ts` — POST. Minimum role: CASHIER. Verifies no OPEN shift exists for the company. Records opened_by, opened_at, opening_cash. Returns created shift.
+- [x] `app/api/shifts/close/route.ts` — POST. Minimum role: CASHIER. Computes totals from all sales in the shift. Warns if total_unassigned > 0. Records closed_by, closed_at. Returns closed shift with summary.
+- [x] `tests/api/shifts.test.ts` — Full coverage: happy path, 401/403/cross-company, validation (missing opening_cash), business rules (shift already open, no open shift to close).
 
 ### 14. Service
 
-- [ ] `services/shifts.service.ts` — getActiveShift(companyId): returns the current OPEN shift or null. openShift(input): creates new shift record. closeShift(shiftId, userId): computes totals, updates status to CLOSED.
+- [x] `services/shifts.service.ts` — getActiveShift(companyId): returns the current OPEN shift or null. openShift(input): creates new shift record. closeShift(shiftId, userId): computes totals, updates status to CLOSED.
 
 ### 15. Schema
 
-- [ ] `lib/validations/shift.schema.ts` — openShiftSchema: { opening_cash: number >= 0 }. closeShiftSchema: { notes?: string }.
+- [x] `lib/validations/shift.schema.ts` — openShiftSchema: { opening_cash: number >= 0 }. closeShiftSchema: { notes?: string }.
 
 ### 16. UI
 
-- [ ] `app/cashier/shift/page.tsx` — Shows current shift status. If no shift open: form to open a new one with opening_cash input. If shift open: summary of current totals and button to close. Warns before closing if there are unassigned services.
+- [x] `app/cashier/shift/page.tsx` — Shows current shift status. If no shift open: form to open a new one with opening_cash input. If shift open: summary of current totals and button to close. Warns before closing if there are unassigned services.
 
 ---
 

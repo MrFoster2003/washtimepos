@@ -143,6 +143,76 @@ All backend service methods and API routes must be documented using JSDoc. Defin
  */
 ```
 
+## 6. API Routes
+
+### 6.1 Shifts
+
+#### `POST /api/shifts/open` — Open a new shift
+
+- **Minimum role**: `CASHIER`
+- **Request body**: `{ opening_cash: number }` (validated via `openShiftSchema`)
+- **Process**:
+  1. Authenticates user via `getSessionUser()` — 401 if no session, 403 if role below CASHIER
+  2. Validates `opening_cash >= 0` with Zod — 422 if invalid
+  3. Checks no OPEN shift exists for the company — 400 if one already exists
+  4. Creates shift record with `company_id` from session, `opened_by` = user id, `status = OPEN`, `opening_cash`
+- **Returns**: `201` with shift data
+- **Location**: `app/api/shifts/open/route.ts:10`
+
+#### `POST /api/shifts/close` — Close the current shift
+
+- **Minimum role**: `CASHIER`
+- **Request body**: `{ notes?: string }` (validated via `closeShiftSchema`)
+- **Process**:
+  1. Authenticates user — 401/403
+  2. Validates body — 422 if `notes` is not a string
+  3. Finds OPEN shift for the company — 404 if none exists
+  4. Fetches all sales for the shift, their detail lines, and payments
+  5. Computes: `total_sales` (sum of sale totals), `total_services` (count of lines with service_id), `total_unassigned` (count of lines with assigned = false), `total_cash` (sum of CASH payments), `total_digital` (sum of non-cash payments)
+  6. Updates shift status to CLOSED, sets `closed_by`, `closed_at`, and computed totals
+- **Returns**: `200` with closed shift summary
+- **Location**: `app/api/shifts/close/route.ts:10`
+
+### Tests
+- `tests/api/shifts.test.ts` — 11 tests covering both open and close
+  - Happy: creates shift on open, computes and closes with totals
+  - Auth: 401 no session, 403 WASHER role
+  - Validation: 422 missing/negative opening_cash, 422 invalid notes type
+  - Business: 400 shift already open, 404 no open shift to close
+
+---
+
+## 7. Service Layer
+
+### 7.1 Shifts Service (`services/shifts.service.ts`)
+
+Three exported functions encapsulating all shift data logic:
+
+| Function | Params | Returns | Description |
+|---|---|---|---|
+| `getActiveShift` | `companyId: string` | `Promise<Shift \| null>` | Returns the current OPEN shift for a company, or null. Called on every POS page load. |
+| `openShift` | `{ company_id, opened_by, opening_cash }` | `Promise<Shift>` | Checks no OPEN shift exists, then creates one. Throws if already open. |
+| `closeShift` | `shiftId, userId, notes?` | `Promise<Shift>` | Computes totals from sales, counts services and unassigned lines, breaks down cash vs digital payments. Throws if not found or already closed. |
+
+**Business rules enforced:**
+- All monetary totals computed server-side from DB — never trusted from client
+- `total_services` counts `sale_details` where `service_id IS NOT NULL`
+- `total_unassigned` counts lines where `assigned = false`
+- Only one OPEN shift allowed per company (checked on open)
+- Already-closed shifts cannot be closed again
+
+---
+
+## 8. Validation Schemas
+
+### 8.1 Shift Schemas (`lib/validations/shift.schema.ts`)
+
+- `openShiftSchema`: `{ opening_cash: z.coerce.number().min(0) }`
+- `closeShiftSchema`: `{ notes: z.string().optional() }`
+- Exports: `OpenShiftInput`, `CloseShiftInput` types
+
+---
+
 ### 3.2 Error and Null Handling
 
 - Database errors must never leak raw messages to the client.

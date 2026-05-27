@@ -97,14 +97,19 @@ Route protection: middleware.ts enforces server-side. Each layout adds client-si
 - Unauthorized page (Phase 2, Task 11)
 - Layout components: Sidebar + TopBar + ThemeProvider (Phase 2, Task 8) — already listed above
 - Role layouts: admin, supervisor, cashier, employee + root redirect (Phase 2, Task 12)
+- Phase 3, Task 13: Shifts API routes + tests
+- Phase 3, Task 14: Shifts service
+- Phase 3, Task 15: Shift validation schemas
+- Phase 3, Task 16: Shift UI
 
 ### In progress
 
-- Phase 2 — Base UI
+- (none)
 
 ### Next task
 
-- Phase 3, Task 13: Shifts API routes + tests
+- (Phase 3 complete — the entire Shifts module is done)
+- Phase 4, Task 17: Vehicle types API + tests
 
 ---
 

@@ -59,6 +59,10 @@ interface ActiveShift {
   opened_at: string
   opening_cash: number
   status: ShiftStatus   // OPEN | CLOSED
+  total_sales: number
+  total_services: number
+  total_unassigned: number
+  opened_by: string
 }
 ```
 
@@ -575,6 +579,37 @@ Allowed roles: **ADMIN**, **SUPERVISOR**, **CASHIER**.
 ```
 
 Allowed roles: **all roles**.
+
+---
+
+## Shift Management UI
+
+### app/cashier/shift/page.tsx
+
+**Path:** `app/cashier/shift/page.tsx`
+
+Client component for opening and closing cashier shifts. Handles three UI states.
+
+**States:**
+
+| State | Display |
+|---|---|
+| Loading | `PageHeader` + `Card` with `Skeleton` placeholders |
+| No shift (open form) | `PageHeader` with subtitle "Open a new shift to start operations". `Card` with `Input` for opening cash (number, min 0, step 100) and "Open Shift" `Button`. Error `Alert` shown if API fails. |
+| Shift open (summary) | `PageHeader` with "Current Shift". Summary `Card` with a 2-column grid (3-column on lg) of info boxes: Opened At (clock icon), Opened By (user icon, truncated UUID), Opening Cash, Total Sales, Services count, Unassigned count. "Close Shift" `Button` at bottom right. |
+
+**Close Shift flow:**
+1. Button click → checks `total_unassigned > 0`
+2. Shows `ConfirmDialog` with warning if unassigned > 0, or standard confirmation
+3. On confirm → calls `POST /api/shifts/close` → on success, calls `clearShift()` on store
+
+**Data flow:**
+- On mount: calls `getActiveShift(companyId)` from service → populates `shift.store` via `setShift()`
+- `useShift()` reads from store for rendering
+- After opening: response from `POST /api/shifts/open` mapped to store
+- After closing: `clearShift()` resets store to `null`
+
+**Dependencies:** `useAuth`, `useShift`, `useShiftStore`, `getActiveShift` service, `PageHeader`, `Card`, `Button`, `Input`, `Skeleton`, `Alert`, `ConfirmDialog`, `formatDateTime`, `formatCurrency`, Lucide icons (`Clock`, `DollarSign`, `PackageOpen`, `UsersRound`, `AlertTriangle`).
 
 ---
 
