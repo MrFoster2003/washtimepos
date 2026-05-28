@@ -41,6 +41,7 @@
 ### 7. Database schema + seed
 
 - [ ] `supabase/schema.sql` — All 25 tables with correct types, foreign keys, constraints, indexes and RLS policies. Every table has RLS enabled and a policy filtering by company_id matching the authenticated user.
+- [x] Added RLS policies for login flow: `users` (SELECT own record) + `roles` (SELECT for authenticated users) — fixes 403 on login query.
 - [ ] `supabase/seed.sql` — Initial data: 4 roles (ADMIN, SUPERVISOR, CASHIER, WASHER), 3 plans (Basic, Pro, Enterprise), 1 test company, 1 test user per role for development.
 
 ---

@@ -100,11 +100,31 @@ Database connections are managed via two distinct, typed Supabase clients:
 - **Security**: **Bypasses Row-Level Security (RLS).** Always filter all database queries by `company_id` manually to prevent data leaks.
 - **CRITICAL**: Never import this file in components, hooks, or browser services.
 
-## 4. Authentication & Authorization
+## 4. Row-Level Security (RLS) Policies
+
+### 4.1 Login flow policies
+
+Added to `supabase/schema.sql` to fix login 403 error:
+
+| Table | Policy | Rule |
+|---|---|---|
+| `users` | `Users can read own record` | `USING (id = auth.uid())` |
+| `roles` | `Authenticated users can read roles` | `USING (true)` |
+
+**Why needed:** The login page at `app/(auth)/login/page.tsx` runs `SELECT ... FROM users JOIN roles` via the browser client (RLS-enforced). Without these policies, PostgREST returns a 403 `P0001` error and the login flow cannot fetch the user's profile or role.
+
+**Design notes:**
+- `roles` is a system table (ADMIN, SUPERVISOR, CASHIER, WASHER) — no sensitive data, so `USING (true)` is safe.
+- `users` restricts to `auth.uid()` — a user can only see their own record, preventing data leaks.
+- Future policies per table follow the same pattern: `USING (company_id = ...)` where `...` comes from the user's JWT claim.
+
+---
+
+## 6. Authentication & Authorization
 
 Authentication and role-based access control (RBAC) are handled globally via Middleware and a server-side session helper.
 
-### 4.1 Session Helper (`lib/auth.ts`)
+### 6.1 Session Helper (`lib/auth.ts`)
 
 - **Function**: `getSessionUser(req: Request | NextRequest)`
 - **Behavior**:
@@ -113,7 +133,7 @@ Authentication and role-based access control (RBAC) are handled globally via Mid
   3. Queries the `users` and `roles` tables to fetch the user's name, active status, `company_id`, and role name.
   4. Returns `{ id, name, company_id, role }` or `null` if unauthenticated, inactive, or invalid.
 
-### 4.2 Middleware (`middleware.ts`)
+### 6.2 Middleware (`middleware.ts`)
 
 - **Interception**: Intercepts all pages and API routes except public routes (`/login`, `/unauthorized`), static assets, and auth APIs (`/api/auth/*`).
 - **Route Authorization Map**:
@@ -127,9 +147,9 @@ Authentication and role-based access control (RBAC) are handled globally via Mid
 
 ---
 
-## 5. Backend Conventions
+## 7. Backend Conventions
 
-### 3.1 JSDoc Standards
+### 7.1 JSDoc Standards
 
 All backend service methods and API routes must be documented using JSDoc. Define parameters, exceptions, rules, and returns clearly:
 
@@ -143,9 +163,9 @@ All backend service methods and API routes must be documented using JSDoc. Defin
  */
 ```
 
-## 6. API Routes
+## 8. API Routes
 
-### 6.1 Shifts
+### 8.1 Shifts
 
 #### `POST /api/shifts/open` — Open a new shift
 
@@ -182,9 +202,9 @@ All backend service methods and API routes must be documented using JSDoc. Defin
 
 ---
 
-## 7. Service Layer
+## 9. Service Layer
 
-### 7.1 Shifts Service (`services/shifts.service.ts`)
+### 9.1 Shifts Service (`services/shifts.service.ts`)
 
 Three exported functions encapsulating all shift data logic:
 
@@ -203,9 +223,9 @@ Three exported functions encapsulating all shift data logic:
 
 ---
 
-## 8. Validation Schemas
+## 10. Validation Schemas
 
-### 8.1 Shift Schemas (`lib/validations/shift.schema.ts`)
+### 10.1 Shift Schemas (`lib/validations/shift.schema.ts`)
 
 - `openShiftSchema`: `{ opening_cash: z.coerce.number().min(0) }`
 - `closeShiftSchema`: `{ notes: z.string().optional() }`
@@ -213,7 +233,7 @@ Three exported functions encapsulating all shift data logic:
 
 ---
 
-### 3.2 Error and Null Handling
+## 11. Error and Null Handling
 
 - Database errors must never leak raw messages to the client.
 - Return HTTP status codes reflecting outcomes (e.g., `401 Unauthorized`, `403 Forbidden`, `422 Unprocessable Content`).

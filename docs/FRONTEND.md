@@ -488,6 +488,14 @@ Public login page at `/login`. Uses `(auth)` route group to avoid role-specific 
 
 **Dependencies:** `react-hook-form` + `zod`, `createBrowserClient()`, `useAuthStore`, shadcn `Input`/`Button`/`Alert`.
 
+**Build fix — Suspense boundary (2026-05-27):** Wrapped `useSearchParams()` usage in a `<Suspense>` boundary to satisfy Next.js 15 requirement. `LoginContent` (inner component) holds all the logic and `useSearchParams()`. `LoginPage` (default export) wraps it in `<Suspense>` with a centered spinner fallback.
+
+**Build fix — RLS policies (2026-05-27):** Login query `users JOIN roles` was returning 403 because no RLS `SELECT` policies existed. Added two policies in `supabase/schema.sql`:
+- `users` → `USING (id = auth.uid())` — user can read own record
+- `roles` → `USING (true)` — any authenticated user can read role names
+
+**Build fix — Login redirect (2026-05-28):** Fixed the redirect after successful login by robustly resolving nested relations (handling both array and object formats for `profile.roles`), setting the `sb-access-token` cookie before triggering the redirect to prevent middleware interception, and ensuring `router.push()` executes properly.
+
 ---
 
 ## Unauthorized Page

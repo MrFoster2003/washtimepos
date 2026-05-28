@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -27,7 +27,7 @@ const roleRedirect: Record<Role, string> = {
   [Role.WASHER]: '/employee/dashboard',
 }
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [error, setError] = useState<string | null>(null)
@@ -44,11 +44,62 @@ export default function LoginPage() {
   })
 
   useEffect(() => {
+    // 1. If we already have a user in Zustand, redirect immediately
     if (user) {
       const redirectTo = searchParams.get('redirectTo') || roleRedirect[user.role]
       router.replace(redirectTo)
+      return
     }
-  }, [user, router, searchParams])
+
+    // 2. Otherwise, check if there is an active session in Supabase to auto-login
+    let active = true
+    async function restoreSession() {
+      const supabase = createBrowserClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!active) return
+      
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('users')
+          .select('id, name, company_id, roles!inner(name)')
+          .eq('id', session.user.id)
+          .single()
+
+        if (!active) return
+
+        if (profile) {
+          let roleName: Role | null = null
+          if (profile.roles) {
+            if (Array.isArray(profile.roles)) {
+              roleName = profile.roles[0]?.name as Role
+            } else if (typeof profile.roles === 'object') {
+              roleName = (profile.roles as { name: string }).name as Role
+            }
+          }
+
+          if (roleName && roleRedirect[roleName]) {
+            // Set the session cookie to ensure middleware allows the navigation
+            const maxAge = session.expires_in || 3600
+            document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=${maxAge}; SameSite=Lax; Secure`
+
+            setUser({
+              id: profile.id,
+              name: profile.name,
+              role: roleName,
+              company_id: profile.company_id,
+            })
+          }
+        }
+      }
+    }
+
+    restoreSession()
+
+    return () => {
+      active = false
+    }
+  }, [user, router, searchParams, setUser])
 
   async function onSubmit(data: LoginForm) {
     setError(null)
@@ -84,11 +135,25 @@ export default function LoginPage() {
       return
     }
 
-    const roleName = (profile.roles as { name: string }).name as Role
+    // Safely extract the role name from the relation (handles both array and object returns)
+    let roleName: Role | null = null
+    if (profile.roles) {
+      if (Array.isArray(profile.roles)) {
+        roleName = profile.roles[0]?.name as Role
+      } else if (typeof profile.roles === 'object') {
+        roleName = (profile.roles as { name: string }).name as Role
+      }
+    }
 
-    if (!roleRedirect[roleName]) {
+    if (!roleName || !roleRedirect[roleName]) {
       setError('Invalid role assigned. Contact your administrator.')
       return
+    }
+
+    // Set the session cookie for middleware BEFORE redirect
+    if (authData.session) {
+      const maxAge = authData.session.expires_in || 3600
+      document.cookie = `sb-access-token=${authData.session.access_token}; path=/; max-age=${maxAge}; SameSite=Lax; Secure`
     }
 
     setUser({
@@ -99,7 +164,7 @@ export default function LoginPage() {
     })
 
     const redirectTo = searchParams.get('redirectTo') || roleRedirect[roleName]
-    router.replace(redirectTo)
+    router.push(redirectTo)
   }
 
   return (
@@ -158,5 +223,17 @@ export default function LoginPage() {
         </form>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center px-4">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   )
 }
