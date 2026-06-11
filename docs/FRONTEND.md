@@ -5,6 +5,30 @@
 
 ---
 
+## Bug Fixes — 2026-06-10
+
+### Multiple GoTrueClient instances
+**File:** `lib/supabase/client.ts`
+
+`createBrowserClient()` was creating a new Supabase client on every call, causing the "Multiple GoTrueClient instances detected" warning. Fixed by implementing a singleton pattern — the client is created once and cached in a module-level variable.
+
+### Login 400 error — debug logging
+**File:** `app/(auth)/login/page.tsx`
+
+Added `console.log('Attempting login with:', data.email)` before the `signInWithPassword` call to confirm what credentials are being sent. This helps diagnose 400 errors from Supabase Auth when credentials are incorrect or env vars are misconfigured.
+
+### Login redirect loop — middleware cookie mismatch
+**Files:** `middleware.ts`, `lib/supabase/client.ts`, `app/(auth)/login/page.tsx`
+
+**Root cause:** Middleware used `getSessionUser()` which read a manually set `sb-access-token` cookie. The login page set this cookie via `document.cookie`, but client-set cookies don't reliably reach the middleware during Next.js client-side navigation, causing middleware to redirect back to `/login` in an infinite loop.
+
+**Fix:** Replaced the entire auth flow with `@supabase/ssr`:
+- `middleware.ts` rewritten to use `createServerClient()` from `@supabase/ssr` with proper `getAll()`/`setAll()` cookie handlers — handles cookie session management automatically on server side.
+- `lib/supabase/client.ts` switched from `@supabase/supabase-js` `createClient` to `@supabase/ssr` `createBrowserClient` — handles cookie persistence automatically on client side.
+- Login page: removed manual `document.cookie` setting — SSR client handles it.
+
+---
+
 ## State Management — Zustand Stores
 
 ### auth.store.ts
@@ -587,6 +611,49 @@ Allowed roles: **ADMIN**, **SUPERVISOR**, **CASHIER**.
 ```
 
 Allowed roles: **all roles**.
+
+---
+
+## Placeholder Pages — 2026-06-11
+
+Created placeholder pages for all routes that were returning 404 after login redirect. Each page renders a `PageHeader` with the page title in Spanish and a "En construcción" badge. These will be replaced with full implementations in their respective phases.
+
+### Admin pages (10)
+| Route | Title | Subtitle |
+|---|---|---|
+| `/admin/dashboard` | Dashboard | Vista general del negocio |
+| `/admin/employees` | Empleados | Gestión del equipo de trabajo |
+| `/admin/services` | Servicios | Catálogo de servicios del lavadero |
+| `/admin/commissions` | Comisiones | Reglas de comisiones por servicio |
+| `/admin/promotions` | Promociones | Descuentos y ofertas especiales |
+| `/admin/inventory` | Inventario | Control de existencias e insumos |
+| `/admin/equipment` | Equipos | Maquinaria y estado de los equipos |
+| `/admin/costs` | Costos Operativos | Registro de gastos del negocio |
+| `/admin/reports` | Reportes | Análisis de ventas, comisiones y rentabilidad |
+| `/admin/config` | Configuración | Ajustes de la empresa |
+
+### Supervisor pages (7)
+| Route | Title | Subtitle |
+|---|---|---|
+| `/supervisor/dashboard` | Dashboard | Resumen del turno actual |
+| `/supervisor/employees` | Empleados | Gestión del equipo de trabajo |
+| `/supervisor/inventory` | Inventario | Control de existencias e insumos |
+| `/supervisor/equipment` | Equipos | Maquinaria y estado de los equipos |
+| `/supervisor/costs` | Costos Operativos | Registro de gastos del negocio |
+| `/supervisor/reports` | Reportes | Análisis de ventas, comisiones y rentabilidad |
+| `/supervisor/commissions` | Comisiones | Consulta de comisiones generadas |
+
+### Cashier pages (3)
+| Route | Title | Subtitle |
+|---|---|---|
+| `/cashier/pos` | POS | Registro de ventas y servicios |
+| `/cashier/attendance` | Asistencia | Registro de entrada y salida de empleados |
+| `/cashier/sales` | Ventas | Historial de ventas del turno actual |
+
+### Employee pages (1)
+| Route | Title | Subtitle |
+|---|---|---|
+| `/employee/dashboard` | Dashboard | Mis comisiones y asistencia |
 
 ---
 

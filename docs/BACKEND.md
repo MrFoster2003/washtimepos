@@ -87,9 +87,10 @@ Database connections are managed via two distinct, typed Supabase clients:
 
 ### 3.1 Browser Client (`lib/supabase/client.ts`)
 
-- **Instantiation**: `createBrowserClient()`
+- **Instantiation**: `createBrowserClient()` (uses `@supabase/ssr` `createBrowserClient` internally)
 - **Credentials**: Uses `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 - **Usage**: Used inside client-side services (`/services/*`) and custom React hooks.
+- **Cookie management**: `@supabase/ssr` automatically persists the auth session in cookies, enabling middleware to read the session on server-side requests.
 - **Security**: Row-Level Security (RLS) is fully enforced via the authenticated user's JWT.
 
 ### 3.2 Admin Client (`lib/supabase/admin.ts`)
@@ -135,15 +136,18 @@ Authentication and role-based access control (RBAC) are handled globally via Mid
 
 ### 6.2 Middleware (`middleware.ts`)
 
-- **Interception**: Intercepts all pages and API routes except public routes (`/login`, `/unauthorized`), static assets, and auth APIs (`/api/auth/*`).
+- **Session handling**: Uses `@supabase/ssr` `createServerClient()` with proper cookie `getAll()`/`setAll()` handlers. Reads the auth session from Supabase-managed cookies — no manual cookie setting needed.
+- **Interception**: Intercepts all pages and API routes except public routes (`/login`, `/unauthorized`) and static assets (any file with a `.` extension via the matcher).
 - **Route Authorization Map**:
   - `/admin/*` ➔ `ADMIN`
   - `/supervisor/*` ➔ `ADMIN`, `SUPERVISOR`
   - `/cashier/*` ➔ `ADMIN`, `SUPERVISOR`, `CASHIER`
   - `/employee/*` ➔ `ADMIN`, `SUPERVISOR`, `CASHIER`, `WASHER`
 - **Redirects & Responses**:
+  - **Already logged in on /login**: Redirects to the correct dashboard based on role.
   - **No Session**: Redirects page requests to `/login` with `redirectTo` search parameter; returns `401 Unauthorized` JSON for API requests.
   - **Insufficient Permissions**: Redirects page requests to `/unauthorized`; returns `403 Forbidden` JSON for API requests.
+- **2026-06-10 update**: Rewritten from manual cookie-based auth (`getSessionUser`) to `@supabase/ssr` to fix infinite redirect loop caused by client-set cookies not reaching the middleware during client-side navigation.
 
 ---
 

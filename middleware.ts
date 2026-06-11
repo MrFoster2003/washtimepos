@@ -1,50 +1,62 @@
+import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { getSessionUser } from '@/lib/auth'
-import { Role } from '@/types/enums'
+import type { Database } from '@/types/database.types'
+import type { Role } from '@/types/enums'
 
-// Map protected route prefixes to their authorized roles
-const routeMap = [
-  { prefix: '/admin', roles: [Role.ADMIN] },
-  { prefix: '/supervisor', roles: [Role.ADMIN, Role.SUPERVISOR] },
-  { prefix: '/cashier', roles: [Role.ADMIN, Role.SUPERVISOR, Role.CASHIER] },
-  { prefix: '/employee', roles: [Role.ADMIN, Role.SUPERVISOR, Role.CASHIER, Role.WASHER] },
+const roleRoutes: { prefix: string; roles: Role[] }[] = [
+  { prefix: '/admin', roles: ['ADMIN'] as Role[] },
+  { prefix: '/supervisor', roles: ['ADMIN', 'SUPERVISOR'] as Role[] },
+  { prefix: '/cashier', roles: ['ADMIN', 'SUPERVISOR', 'CASHIER'] as Role[] },
+  { prefix: '/employee', roles: ['ADMIN', 'SUPERVISOR', 'CASHIER', 'WASHER'] as Role[] },
 ]
 
-/**
- * Next.js Middleware to intercept requests and enforce role-based access control.
- *
- * @param req - The incoming next request
- * @returns The appropriate redirect, JSON response, or next response
- */
-export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl
+const redirectMap: Record<string, string> = {
+  ADMIN: '/admin/dashboard',
+  SUPERVISOR: '/supervisor/dashboard',
+  CASHIER: '/cashier/pos',
+  WASHER: '/employee/dashboard',
+}
 
-  // 1. Skip check for public pages, public assets, and public api paths
-  if (
-    pathname === '/login' ||
-    pathname === '/unauthorized' ||
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/api/auth') || // Allow authentication endpoints to be public
-    pathname.match(/\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)$/)
-  ) {
-    return NextResponse.next()
-  }
+export async function middleware(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({ request })
 
-  // 2. Identify if the current route is protected and get allowed roles
-  const matchedRoute = routeMap.find(route => pathname.startsWith(route.prefix))
-  
-  // If the path does not match any protected prefix, let it pass
-  if (!matchedRoute) {
-    return NextResponse.next()
-  }
+  const supabase = createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          )
+          supabaseResponse = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
+
+  const { data: { user } } = await supabase.auth.getUser()
+  const { pathname } = request.nextUrl
 
   const isApiRoute = pathname.startsWith('/api')
 
-  // 3. Retrieve user session
-  const user = await getSessionUser(req)
+  // Public routes — always accessible
+  if (pathname === '/login' || pathname === '/unauthorized') {
+    if (user && pathname === '/login') {
+      const redirectTo = await getDashboardRoute(supabase, user.id)
+      return NextResponse.redirect(new URL(redirectTo, request.url))
+    }
+    return supabaseResponse
+  }
 
-  // 4. Handle unauthenticated case (No session)
+  // Protected routes — require authentication
   if (!user) {
     if (isApiRoute) {
       return NextResponse.json(
@@ -52,39 +64,67 @@ export async function middleware(req: NextRequest) {
         { status: 401 }
       )
     }
-    // Redirect web page request to login
-    const loginUrl = new URL('/login', req.url)
-    // Add original URL as a redirect query param for post-login redirection
+    const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('redirectTo', pathname)
     return NextResponse.redirect(loginUrl)
   }
 
-  // 5. Handle unauthorized case (Wrong role)
-  if (!matchedRoute.roles.includes(user.role)) {
+  // Role-based protection
+  const matchedRoute = roleRoutes.find(route => pathname.startsWith(route.prefix))
+  if (!matchedRoute) {
+    return supabaseResponse
+  }
+
+  const role = await getUserRole(supabase, user.id)
+  if (!role) {
     if (isApiRoute) {
       return NextResponse.json(
         { error: 'Forbidden. Insufficient permissions.' },
         { status: 403 }
       )
     }
-    // Redirect web page request to unauthorized page
-    return NextResponse.redirect(new URL('/unauthorized', req.url))
+    return NextResponse.redirect(new URL('/unauthorized', request.url))
   }
 
-  // 6. User is authenticated and authorized, proceed
-  return NextResponse.next()
+  if (!matchedRoute.roles.includes(role)) {
+    if (isApiRoute) {
+      return NextResponse.json(
+        { error: 'Forbidden. Insufficient permissions.' },
+        { status: 403 }
+      )
+    }
+    return NextResponse.redirect(new URL('/unauthorized', request.url))
+  }
+
+  return supabaseResponse
 }
 
-// Configure paths that will trigger this middleware
+async function getDashboardRoute(
+  supabase: ReturnType<typeof createServerClient<Database>>,
+  userId: string
+): Promise<string> {
+  const role = await getUserRole(supabase, userId)
+  return redirectMap[role ?? ''] ?? '/unauthorized'
+}
+
+async function getUserRole(
+  supabase: ReturnType<typeof createServerClient<Database>>,
+  userId: string
+): Promise<Role | null> {
+  const { data: userData } = await supabase
+    .from('users')
+    .select('roles(name)')
+    .eq('id', userId)
+    .single()
+
+  if (!userData?.roles) return null
+
+  const roles = userData.roles as { name: string } | { name: string }[]
+  const roleName = Array.isArray(roles) ? roles[0]?.name : roles.name
+
+  return roleName as Role ?? null
+}
+
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public assets
-     */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)'],
 }

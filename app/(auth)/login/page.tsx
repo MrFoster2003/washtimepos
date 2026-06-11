@@ -79,10 +79,6 @@ function LoginContent() {
           }
 
           if (roleName && roleRedirect[roleName]) {
-            // Set the session cookie to ensure middleware allows the navigation
-            const maxAge = session.expires_in || 3600
-            document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=${maxAge}; SameSite=Lax; Secure`
-
             setUser({
               id: profile.id,
               name: profile.name,
@@ -148,12 +144,6 @@ function LoginContent() {
     if (!roleName || !roleRedirect[roleName]) {
       setError('Invalid role assigned. Contact your administrator.')
       return
-    }
-
-    // Set the session cookie for middleware BEFORE redirect
-    if (authData.session) {
-      const maxAge = authData.session.expires_in || 3600
-      document.cookie = `sb-access-token=${authData.session.access_token}; path=/; max-age=${maxAge}; SameSite=Lax; Secure`
     }
 
     setUser({
