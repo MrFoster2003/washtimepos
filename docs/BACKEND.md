@@ -144,10 +144,10 @@ Authentication and role-based access control (RBAC) are handled globally via Mid
   - `/cashier/*` ➔ `ADMIN`, `SUPERVISOR`, `CASHIER`
   - `/employee/*` ➔ `ADMIN`, `SUPERVISOR`, `CASHIER`, `WASHER`
 - **Redirects & Responses**:
-  - **Already logged in on /login**: Redirects to the correct dashboard based on role.
   - **No Session**: Redirects page requests to `/login` with `redirectTo` search parameter; returns `401 Unauthorized` JSON for API requests.
   - **Insufficient Permissions**: Redirects page requests to `/unauthorized`; returns `403 Forbidden` JSON for API requests.
 - **2026-06-10 update**: Rewritten from manual cookie-based auth (`getSessionUser`) to `@supabase/ssr` to fix infinite redirect loop caused by client-set cookies not reaching the middleware during client-side navigation.
+- **2026-06-11 update**: Removed the auto-redirect from `/login` for already-authenticated users. Middleware no longer redirects from public routes — the login page's `restoreSession()` handles client-side redirect, which properly populates Zustand before navigating. Removed unused `getDashboardRoute` and `redirectMap`.
 
 ---
 

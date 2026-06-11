@@ -102,6 +102,7 @@ Route protection: middleware.ts enforces server-side. Each layout adds client-si
 - Phase 3, Task 15: Shift validation schemas
 - Phase 3, Task 16: Shift UI
 - Fixed infinite login redirect loop: migrated middleware and browser client to `@supabase/ssr` — no more manual cookie handling
+- Fixed pantalla negra on new tab: removed auto-redirect from middleware `/login`, added session restore to `RoleLayout`
 
 ### In progress
 

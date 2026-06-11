@@ -29,6 +29,36 @@ Added `console.log('Attempting login with:', data.email)` before the `signInWith
 
 ---
 
+## Bug Fixes — 2026-06-11
+
+### Pantalla negra al abrir nueva pestaña — Zustand vacío sin restauración
+**Files:** `middleware.ts`, `components/layout/RoleLayout.tsx`
+
+**Root cause:** Al abrir una nueva pestaña, el middleware encontraba la sesión en cookies y redirigía al dashboard. `RoleLayout` consultaba Zustand (vacío en nueva pestaña), retornaba null (pantalla negra) y llamaba `router.replace('/login')`. El middleware interceptaba `/login`, veía la sesión activa, y redirigía al dashboard — bucle infinito con pantalla negra.
+
+**Fix — middleware.ts:**
+- Eliminado el redirect automático de `/login` cuando el usuario ya tiene sesión (líneas `if (user && pathname === '/login')`).
+- El middleware ahora solo pasa a través en rutas públicas, nunca redirige desde `/login`.
+- Eliminadas las funciones `getDashboardRoute` y `redirectMap` (ya no se usan).
+
+**Fix — RoleLayout.tsx:**
+- Agregado estado `isRestoring` y lógica de restauración de sesión en el `useEffect`.
+- Cuando `user` es null, intenta restaurar la sesión desde Supabase vía `supabase.auth.getSession()`.
+- Si encuentra sesión, fetchea el perfil (`users` + `roles`), llama `setUser()` para llenar Zustand.
+- Mientras restaura, muestra un spinner centrado (`Loader2`).
+- Si no hay sesión, redirige a `/login`.
+- Si el rol no está permitido, redirige a `/unauthorized`.
+
+**Flujo corregido (nueva pestaña):**
+```
+Nueva pestaña → middleware pasa a través → /login
+Login page: restoreSession() encuentra sesión → setUser() en Zustand
+→ router.replace(/admin/dashboard) (client nav, Zustand preservado)
+RoleLayout: user existe en store → renderiza dashboard ✅
+```
+
+---
+
 ## State Management — Zustand Stores
 
 ### auth.store.ts
@@ -560,9 +590,15 @@ Client component used by all four role layouts. Provides a consistent page shell
 
 **Behavior:**
 1. Reads user from `auth.store`
-2. No session → redirects to `/login`
-3. Role not in `allowedRoles` → redirects to `/unauthorized`
-4. Renders `<TopBar />`, `<Sidebar />`, and `<main>` with `pt-14 lg:pl-64` padding for fixed header/sidebar
+2. If user exists: checks role against `allowedRoles` → redirects to `/unauthorized` if not allowed
+3. If user is null (new tab, full reload): attempts to restore session from Supabase via `supabase.auth.getSession()`
+   - Session found: fetches profile, calls `setUser()` to populate Zustand store
+   - Session not found: redirects to `/login`
+   - Role mismatch: redirects to `/unauthorized`
+4. While restoring, shows a centered `Loader2` spinner
+5. Once user is set and role is valid: renders `<TopBar />`, `<Sidebar />`, and `<main>` with `pt-14 lg:pl-64` padding for fixed header/sidebar
+
+**2026-06-11 update:** Added session restore logic to prevent pantalla negra when opening a new tab. Previously, `RoleLayout` immediately redirected to `/login` if Zustand was empty, creating a redirect loop with middleware.
 
 ---
 

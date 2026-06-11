@@ -11,13 +11,6 @@ const roleRoutes: { prefix: string; roles: Role[] }[] = [
   { prefix: '/employee', roles: ['ADMIN', 'SUPERVISOR', 'CASHIER', 'WASHER'] as Role[] },
 ]
 
-const redirectMap: Record<string, string> = {
-  ADMIN: '/admin/dashboard',
-  SUPERVISOR: '/supervisor/dashboard',
-  CASHIER: '/cashier/pos',
-  WASHER: '/employee/dashboard',
-}
-
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
@@ -47,12 +40,8 @@ export async function middleware(request: NextRequest) {
 
   const isApiRoute = pathname.startsWith('/api')
 
-  // Public routes — always accessible
+  // Public routes — always accessible (never redirect, let client-side handle already-logged-in)
   if (pathname === '/login' || pathname === '/unauthorized') {
-    if (user && pathname === '/login') {
-      const redirectTo = await getDashboardRoute(supabase, user.id)
-      return NextResponse.redirect(new URL(redirectTo, request.url))
-    }
     return supabaseResponse
   }
 
@@ -97,14 +86,6 @@ export async function middleware(request: NextRequest) {
   }
 
   return supabaseResponse
-}
-
-async function getDashboardRoute(
-  supabase: ReturnType<typeof createServerClient<Database>>,
-  userId: string
-): Promise<string> {
-  const role = await getUserRole(supabase, userId)
-  return redirectMap[role ?? ''] ?? '/unauthorized'
 }
 
 async function getUserRole(
