@@ -5,6 +5,60 @@
 
 ---
 
+## Bug Fixes — 2026-06-10
+
+### Multiple GoTrueClient instances
+**File:** `lib/supabase/client.ts`
+
+`createBrowserClient()` was creating a new Supabase client on every call, causing the "Multiple GoTrueClient instances detected" warning. Fixed by implementing a singleton pattern — the client is created once and cached in a module-level variable.
+
+### Login 400 error — debug logging
+**File:** `app/(auth)/login/page.tsx`
+
+Added `console.log('Attempting login with:', data.email)` before the `signInWithPassword` call to confirm what credentials are being sent. This helps diagnose 400 errors from Supabase Auth when credentials are incorrect or env vars are misconfigured.
+
+### Login redirect loop — middleware cookie mismatch
+**Files:** `middleware.ts`, `lib/supabase/client.ts`, `app/(auth)/login/page.tsx`
+
+**Root cause:** Middleware used `getSessionUser()` which read a manually set `sb-access-token` cookie. The login page set this cookie via `document.cookie`, but client-set cookies don't reliably reach the middleware during Next.js client-side navigation, causing middleware to redirect back to `/login` in an infinite loop.
+
+**Fix:** Replaced the entire auth flow with `@supabase/ssr`:
+- `middleware.ts` rewritten to use `createServerClient()` from `@supabase/ssr` with proper `getAll()`/`setAll()` cookie handlers — handles cookie session management automatically on server side.
+- `lib/supabase/client.ts` switched from `@supabase/supabase-js` `createClient` to `@supabase/ssr` `createBrowserClient` — handles cookie persistence automatically on client side.
+- Login page: removed manual `document.cookie` setting — SSR client handles it.
+
+---
+
+## Bug Fixes — 2026-06-11
+
+### Pantalla negra al abrir nueva pestaña — Zustand vacío sin restauración
+**Files:** `middleware.ts`, `components/layout/RoleLayout.tsx`
+
+**Root cause:** Al abrir una nueva pestaña, el middleware encontraba la sesión en cookies y redirigía al dashboard. `RoleLayout` consultaba Zustand (vacío en nueva pestaña), retornaba null (pantalla negra) y llamaba `router.replace('/login')`. El middleware interceptaba `/login`, veía la sesión activa, y redirigía al dashboard — bucle infinito con pantalla negra.
+
+**Fix — middleware.ts:**
+- Eliminado el redirect automático de `/login` cuando el usuario ya tiene sesión (líneas `if (user && pathname === '/login')`).
+- El middleware ahora solo pasa a través en rutas públicas, nunca redirige desde `/login`.
+- Eliminadas las funciones `getDashboardRoute` y `redirectMap` (ya no se usan).
+
+**Fix — RoleLayout.tsx:**
+- Agregado estado `isRestoring` y lógica de restauración de sesión en el `useEffect`.
+- Cuando `user` es null, intenta restaurar la sesión desde Supabase vía `supabase.auth.getSession()`.
+- Si encuentra sesión, fetchea el perfil (`users` + `roles`), llama `setUser()` para llenar Zustand.
+- Mientras restaura, muestra un spinner centrado (`Loader2`).
+- Si no hay sesión, redirige a `/login`.
+- Si el rol no está permitido, redirige a `/unauthorized`.
+
+**Flujo corregido (nueva pestaña):**
+```
+Nueva pestaña → middleware pasa a través → /login
+Login page: restoreSession() encuentra sesión → setUser() en Zustand
+→ router.replace(/admin/dashboard) (client nav, Zustand preservado)
+RoleLayout: user existe en store → renderiza dashboard ✅
+```
+
+---
+
 ## State Management — Zustand Stores
 
 ### auth.store.ts
@@ -59,6 +113,10 @@ interface ActiveShift {
   opened_at: string
   opening_cash: number
   status: ShiftStatus   // OPEN | CLOSED
+  total_sales: number
+  total_services: number
+  total_unassigned: number
+  opened_by: string
 }
 ```
 
@@ -277,3 +335,399 @@ formatDateTime('2026-03-15T14:30:00')  // "15 de marzo de 2026, 02:30 p.m."
 | `date` | `string \| Date` | ISO string or Date object |
 
 **Returns:** `string`
+
+---
+
+## Layout Components
+
+### Sidebar
+
+**Path:** `components/layout/Sidebar.tsx`
+
+Role-aware navigation sidebar. Renders only the links allowed for the current user's role using a single `navItems` config array filtered by role.
+
+**Desktop:** Fixed `w-64` sidebar on the left (`hidden lg:flex lg:w-64 lg:fixed lg:inset-y-0`). Uses `bg-sidebar` background.
+
+**Mobile:** Accessible via hamburger button in the `TopBar`. Uses shadcn `Sheet` with `side="left"`. Each nav link is wrapped in `SheetClose` so the sheet closes on navigation.
+
+**Exports:**
+| Export | Description |
+|---|---|
+| `Sidebar` | Desktop fixed sidebar |
+| `MobileSidebar` | Sheet-based mobile navigation trigger + content |
+
+**Nav links per role:**
+
+| Admin | Supervisor | Cashier | Washer |
+|---|---|---|---|
+| Dashboard, Employees, Services, Commissions, Promotions, Inventory, Equipment, Costs, Reports, Config | Dashboard, Employees, Inventory, Equipment, Costs, Reports, Commissions | POS, Shift, Attendance, Sales | Dashboard |
+
+**Behavior:**
+- Reads `useAuth()` to get the current user's role
+- Filters `navItems` array by `role`
+- Highlights active link using `usePathname()` — active when `pathname.startsWith(href)`
+- Active style: `bg-primary/10 text-primary`
+- Inactive style: `text-muted-foreground hover:bg-muted hover:text-foreground`
+
+---
+
+### TopBar
+
+**Path:** `components/layout/TopBar.tsx`
+
+Fixed top bar displayed across all role-protected pages.
+
+**Layout:** `fixed top-0 right-0 left-0 z-40 h-14 border-b bg-background` with `lg:left-64` to account for the desktop sidebar.
+
+**Sections (left to right):**
+1. `MobileSidebar` trigger (hamburger icon, visible only on mobile via `lg:hidden`)
+2. "WashTime" branding text (hidden on small screens via `hidden sm:inline`)
+3. Vertical `Separator` (hidden on small screens)
+4. User name from `useAuth()` (falls back to "Not logged in")
+5. Role badge using shadcn `Badge` — variant per role:
+   - ADMIN: `default` (primary blue)
+   - SUPERVISOR: `secondary`
+   - CASHIER / WASHER: `outline`
+6. Dark mode toggle using `next-themes` `useTheme()` — Sun/Moon icons with rotation animation
+
+---
+
+### ThemeProvider
+
+**Path:** `components/theme-provider.tsx`
+
+Client component that wraps `next-themes` `ThemeProvider`.
+
+**Configuration:**
+```ts
+attribute="class"       // Adds 'dark' class to <html>
+defaultTheme="system"   // Follows OS preference on first visit
+enableSystem            // Reads system preference
+disableTransitionOnChange  // Prevents flash on theme switch
+```
+
+Used in `app/layout.tsx` as a client boundary wrapping all children.
+
+---
+
+## Custom UI Components
+
+### Stat
+
+**Path:** `components/ui/Stat.tsx`
+
+Dashboard metric card. Built on top of shadcn `Card`.
+
+```tsx
+import { Stat } from '@/components/ui/Stat'
+import { DollarSign } from 'lucide-react'
+
+<Stat
+  label="Today's Revenue"
+  value="$ 150.000"
+  trend={12.5}
+  icon={DollarSign}
+/>
+```
+
+**Props:**
+| Prop | Type | Required | Description |
+|---|---|---|---|
+| `label` | `string` | yes | Metric description |
+| `value` | `string \| number` | yes | Display value (formatted outside) |
+| `trend` | `number` | no | Percentage change. Positive → green `TrendingUp` arrow. Negative → red `TrendingDown` arrow. |
+| `icon` | `LucideIcon` | no | Icon displayed in a `bg-primary/10` rounded box |
+
+**Rendering:**
+- Left: label (text-xs muted), value (text-2xl bold), optional trend with arrow
+- Right: optional icon in a `p-2 rounded-lg bg-primary/10 text-primary` container
+
+---
+
+### PageHeader
+
+**Path:** `components/ui/PageHeader.tsx`
+
+Consistent page title block used at the top of every page in the app.
+
+```tsx
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Button } from '@/components/ui/button'
+
+<PageHeader
+  title="Employees"
+  subtitle="Manage your team members"
+  action={<Button>New Employee</Button>}
+/>
+```
+
+**Props:**
+| Prop | Type | Required | Description |
+|---|---|---|---|
+| `title` | `string` | yes | Page title (text-xl font-bold) |
+| `subtitle` | `string` | no | Description below the title (text-sm muted) |
+| `action` | `ReactNode` | no | Action element rendered at the right on desktop, below on mobile |
+
+**Responsive:** On mobile (`sm:` breakpoint), action moves below the title.
+
+---
+
+### ConfirmDialog
+
+**Path:** `components/ui/ConfirmDialog.tsx`
+
+Replaces all uses of `confirm()`, `alert()`, and `prompt()` in the app. Wraps shadcn `Dialog`.
+
+```tsx
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { useState } from 'react'
+
+function MyComponent() {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <>
+      <Button onClick={() => setOpen(true)}>Delete</Button>
+      <ConfirmDialog
+        open={open}
+        onConfirm={() => { /* destructive action */ setOpen(false) }}
+        onCancel={() => setOpen(false)}
+        title="Delete employee?"
+        description="This action cannot be undone. The employee will be deactivated."
+        variant="danger"
+      />
+    </>
+  )
+}
+```
+
+**Props:**
+| Prop | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `open` | `boolean` | yes | — | Controls dialog visibility |
+| `onConfirm` | `() => void` | yes | — | Called when user clicks Confirm |
+| `onCancel` | `() => void` | yes | — | Called when user clicks Cancel or closes dialog |
+| `title` | `string` | yes | — | Dialog title |
+| `description` | `string` | yes | — | Dialog description body |
+| `variant` | `'danger' \| 'warning'` | no | `'danger'` | Danger → red `destructive` button. Warning → blue `default` button. |
+
+**Business rule:** Never use `alert()`, `confirm()`, or `prompt()` — always use `ConfirmDialog`.
+
+---
+
+## Login Page
+
+### app/(auth)/login/page.tsx
+
+**Path:** `app/(auth)/login/page.tsx`
+
+Public login page at `/login`. Uses `(auth)` route group to avoid role-specific layouts.
+
+**Form fields:**
+| Field | Type | Validation |
+|---|---|---|
+| Email | `email` | Valid email format via Zod |
+| Password | `password` | Required (min 1 char) |
+
+**Flow:**
+1. Submit email + password → `supabase.auth.signInWithPassword()`
+2. On success: fetch `users` record (joined with `roles`) by `auth.uid()`
+3. Store `{ id, name, role, company_id }` in `auth.store` via `setUser()`
+4. Redirect based on role: ADMIN → `/admin/dashboard`, SUPERVISOR → `/supervisor/dashboard`, CASHIER → `/cashier/pos`, WASHER → `/employee/dashboard`
+5. If `redirectTo` query param exists (set by middleware), it takes priority
+
+**Already logged in:** Redirects to dashboard via `useEffect` on mount if `auth.store` has a user.
+
+**Error handling:** shadcn `Alert variant="destructive"` for invalid credentials, account not found, or Supabase errors.
+
+**Dependencies:** `react-hook-form` + `zod`, `createBrowserClient()`, `useAuthStore`, shadcn `Input`/`Button`/`Alert`.
+
+**Build fix — Suspense boundary (2026-05-27):** Wrapped `useSearchParams()` usage in a `<Suspense>` boundary to satisfy Next.js 15 requirement. `LoginContent` (inner component) holds all the logic and `useSearchParams()`. `LoginPage` (default export) wraps it in `<Suspense>` with a centered spinner fallback.
+
+**Build fix — RLS policies (2026-05-27):** Login query `users JOIN roles` was returning 403 because no RLS `SELECT` policies existed. Added two policies in `supabase/schema.sql`:
+- `users` → `USING (id = auth.uid())` — user can read own record
+- `roles` → `USING (true)` — any authenticated user can read role names
+
+**Build fix — Login redirect (2026-05-28):** Fixed the redirect after successful login by robustly resolving nested relations (handling both array and object formats for `profile.roles`), setting the `sb-access-token` cookie before triggering the redirect to prevent middleware interception, and ensuring `router.push()` executes properly.
+
+---
+
+## Unauthorized Page
+
+### app/unauthorized/page.tsx
+
+**Path:** `app/unauthorized/page.tsx`
+
+Simple page shown when a user tries to access a route outside their role. Redirected to by `middleware.ts` when role check fails.
+
+**Behavior:**
+- Reads `user` from `auth.store`
+- If no user (no session) → redirects to `/login`
+- Shows a `ShieldAlert` icon, "Access Denied" title, and a message with the user's current role
+- Button "Go to my dashboard" redirects to the correct dashboard based on role:
+  - ADMIN → `/admin/dashboard`
+  - SUPERVISOR → `/supervisor/dashboard`
+  - CASHIER → `/cashier/pos`
+  - WASHER → `/employee/dashboard`
+
+**Dependencies:** `useAuthStore`, shadcn `Button`, `Lucide` `ShieldAlert` icon.
+
+---
+
+## Role Layouts
+
+### Shared Layout — RoleLayout
+
+**Path:** `components/layout/RoleLayout.tsx`
+
+Client component used by all four role layouts. Provides a consistent page shell with `TopBar`, `Sidebar`, and a content area.
+
+**Props:**
+| Prop | Type | Description |
+|---|---|---|
+| `children` | `ReactNode` | Page content to render inside the layout |
+| `allowedRoles` | `Role[]` | Array of roles allowed to access pages under this layout |
+
+**Behavior:**
+1. Reads user from `auth.store`
+2. If user exists: checks role against `allowedRoles` → redirects to `/unauthorized` if not allowed
+3. If user is null (new tab, full reload): attempts to restore session from Supabase via `supabase.auth.getSession()`
+   - Session found: fetches profile, calls `setUser()` to populate Zustand store
+   - Session not found: redirects to `/login`
+   - Role mismatch: redirects to `/unauthorized`
+4. While restoring, shows a centered `Loader2` spinner
+5. Once user is set and role is valid: renders `<TopBar />`, `<Sidebar />`, and `<main>` with `pt-14 lg:pl-64` padding for fixed header/sidebar
+
+**2026-06-11 update:** Added session restore logic to prevent pantalla negra when opening a new tab. Previously, `RoleLayout` immediately redirected to `/login` if Zustand was empty, creating a redirect loop with middleware.
+
+---
+
+### Admin Layout
+
+**Path:** `app/admin/layout.tsx`
+
+```tsx
+<RoleLayout allowedRoles={[Role.ADMIN]}>
+```
+
+Allowed roles: **ADMIN** only.
+
+---
+
+### Supervisor Layout
+
+**Path:** `app/supervisor/layout.tsx`
+
+```tsx
+<RoleLayout allowedRoles={[Role.ADMIN, Role.SUPERVISOR]}>
+```
+
+Allowed roles: **ADMIN**, **SUPERVISOR**.
+
+---
+
+### Cashier Layout
+
+**Path:** `app/cashier/layout.tsx`
+
+```tsx
+<RoleLayout allowedRoles={[Role.ADMIN, Role.SUPERVISOR, Role.CASHIER]}>
+```
+
+Allowed roles: **ADMIN**, **SUPERVISOR**, **CASHIER**.
+
+---
+
+### Employee Layout
+
+**Path:** `app/employee/layout.tsx`
+
+```tsx
+<RoleLayout allowedRoles={[Role.ADMIN, Role.SUPERVISOR, Role.CASHIER, Role.WASHER]}>
+```
+
+Allowed roles: **all roles**.
+
+---
+
+## Placeholder Pages — 2026-06-11
+
+Created placeholder pages for all routes that were returning 404 after login redirect. Each page renders a `PageHeader` with the page title in Spanish and a "En construcción" badge. These will be replaced with full implementations in their respective phases.
+
+### Admin pages (10)
+| Route | Title | Subtitle |
+|---|---|---|
+| `/admin/dashboard` | Dashboard | Vista general del negocio |
+| `/admin/employees` | Empleados | Gestión del equipo de trabajo |
+| `/admin/services` | Servicios | Catálogo de servicios del lavadero |
+| `/admin/commissions` | Comisiones | Reglas de comisiones por servicio |
+| `/admin/promotions` | Promociones | Descuentos y ofertas especiales |
+| `/admin/inventory` | Inventario | Control de existencias e insumos |
+| `/admin/equipment` | Equipos | Maquinaria y estado de los equipos |
+| `/admin/costs` | Costos Operativos | Registro de gastos del negocio |
+| `/admin/reports` | Reportes | Análisis de ventas, comisiones y rentabilidad |
+| `/admin/config` | Configuración | Ajustes de la empresa |
+
+### Supervisor pages (7)
+| Route | Title | Subtitle |
+|---|---|---|
+| `/supervisor/dashboard` | Dashboard | Resumen del turno actual |
+| `/supervisor/employees` | Empleados | Gestión del equipo de trabajo |
+| `/supervisor/inventory` | Inventario | Control de existencias e insumos |
+| `/supervisor/equipment` | Equipos | Maquinaria y estado de los equipos |
+| `/supervisor/costs` | Costos Operativos | Registro de gastos del negocio |
+| `/supervisor/reports` | Reportes | Análisis de ventas, comisiones y rentabilidad |
+| `/supervisor/commissions` | Comisiones | Consulta de comisiones generadas |
+
+### Cashier pages (3)
+| Route | Title | Subtitle |
+|---|---|---|
+| `/cashier/pos` | POS | Registro de ventas y servicios |
+| `/cashier/attendance` | Asistencia | Registro de entrada y salida de empleados |
+| `/cashier/sales` | Ventas | Historial de ventas del turno actual |
+
+### Employee pages (1)
+| Route | Title | Subtitle |
+|---|---|---|
+| `/employee/dashboard` | Dashboard | Mis comisiones y asistencia |
+
+---
+
+## Shift Management UI
+
+### app/cashier/shift/page.tsx
+
+**Path:** `app/cashier/shift/page.tsx`
+
+Client component for opening and closing cashier shifts. Handles three UI states.
+
+**States:**
+
+| State | Display |
+|---|---|
+| Loading | `PageHeader` + `Card` with `Skeleton` placeholders |
+| No shift (open form) | `PageHeader` with subtitle "Open a new shift to start operations". `Card` with `Input` for opening cash (number, min 0, step 100) and "Open Shift" `Button`. Error `Alert` shown if API fails. |
+| Shift open (summary) | `PageHeader` with "Current Shift". Summary `Card` with a 2-column grid (3-column on lg) of info boxes: Opened At (clock icon), Opened By (user icon, truncated UUID), Opening Cash, Total Sales, Services count, Unassigned count. "Close Shift" `Button` at bottom right. |
+
+**Close Shift flow:**
+1. Button click → checks `total_unassigned > 0`
+2. Shows `ConfirmDialog` with warning if unassigned > 0, or standard confirmation
+3. On confirm → calls `POST /api/shifts/close` → on success, calls `clearShift()` on store
+
+**Data flow:**
+- On mount: calls `getActiveShift(companyId)` from service → populates `shift.store` via `setShift()`
+- `useShift()` reads from store for rendering
+- After opening: response from `POST /api/shifts/open` mapped to store
+- After closing: `clearShift()` resets store to `null`
+
+**Dependencies:** `useAuth`, `useShift`, `useShiftStore`, `getActiveShift` service, `PageHeader`, `Card`, `Button`, `Input`, `Skeleton`, `Alert`, `ConfirmDialog`, `formatDateTime`, `formatCurrency`, Lucide icons (`Clock`, `DollarSign`, `PackageOpen`, `UsersRound`, `AlertTriangle`).
+
+---
+
+### Root Page
+
+**Path:** `app/page.tsx`
+
+Client component that never renders UI — always redirects:
+- No session → `/login`
+- Session exists → dashboard based on role (`/admin/dashboard`, `/supervisor/dashboard`, `/cashier/pos`, `/employee/dashboard`)

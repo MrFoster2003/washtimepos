@@ -6,6 +6,10 @@ export interface ActiveShift {
   opened_at: string
   opening_cash: number
   status: ShiftStatus
+  total_sales: number
+  total_services: number
+  total_unassigned: number
+  opened_by: string
 }
 
 interface ShiftState {

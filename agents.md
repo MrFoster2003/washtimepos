@@ -91,14 +91,27 @@ Route protection: middleware.ts enforces server-side. Each layout adds client-si
 - Base hooks: useAuth, useShift, useDebounce (Phase 1, Task 5)
 - Utilities: formatCurrency, formatDate, formatDateTime, cn (Phase 1, Task 6)
 - Database types verified: types/database.types.ts exists (83 KB, auto-generated)
+- Layout components: Sidebar + TopBar + ThemeProvider (Phase 2, Task 8)
+- Custom UI components: Stat, PageHeader, ConfirmDialog (Phase 2, Task 9)
+- Login page (Phase 2, Task 10)
+- Unauthorized page (Phase 2, Task 11)
+- Layout components: Sidebar + TopBar + ThemeProvider (Phase 2, Task 8) — already listed above
+- Role layouts: admin, supervisor, cashier, employee + root redirect (Phase 2, Task 12)
+- Phase 3, Task 13: Shifts API routes + tests
+- Phase 3, Task 14: Shifts service
+- Phase 3, Task 15: Shift validation schemas
+- Phase 3, Task 16: Shift UI
+- Fixed infinite login redirect loop: migrated middleware and browser client to `@supabase/ssr` — no more manual cookie handling
+- Fixed pantalla negra on new tab: removed auto-redirect from middleware `/login`, added session restore to `RoleLayout`
 
 ### In progress
 
-- Phase 1 — Base technical setup
+- (none)
 
 ### Next task
 
-- Phase 1, Task 7: Database schema + seed (supabase/schema.sql + supabase/seed.sql) — still pending
+- (Phase 3 complete — the entire Shifts module is done)
+- Phase 4, Task 17: Vehicle types API + tests
 
 ---
 

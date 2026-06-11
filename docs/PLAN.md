@@ -41,6 +41,7 @@
 ### 7. Database schema + seed
 
 - [ ] `supabase/schema.sql` — All 25 tables with correct types, foreign keys, constraints, indexes and RLS policies. Every table has RLS enabled and a policy filtering by company_id matching the authenticated user.
+- [x] Added RLS policies for login flow: `users` (SELECT own record) + `roles` (SELECT for authenticated users) — fixes 403 on login query.
 - [ ] `supabase/seed.sql` — Initial data: 4 roles (ADMIN, SUPERVISOR, CASHIER, WASHER), 3 plans (Basic, Pro, Enterprise), 1 test company, 1 test user per role for development.
 
 ---
@@ -51,29 +52,29 @@
 
 ### 8. Layout components
 
-- [ ] `components/layout/Sidebar.tsx` — Role-aware navigation sidebar. Reads role from auth.store and renders only the links allowed for that role. One component handles all roles — no duplicated nav logic.
-- [ ] `components/layout/TopBar.tsx` — Fixed top bar with company name, current user name + role badge, and dark mode toggle. Persists dark mode preference in localStorage.
+- [x] `components/layout/Sidebar.tsx` — Role-aware navigation sidebar. Reads role from auth.store and renders only the links allowed for that role. One component handles all roles — no duplicated nav logic.
+- [x] `components/layout/TopBar.tsx` — Fixed top bar with company name, current user name + role badge, and dark mode toggle. Persists dark mode preference in localStorage.
 
 ### 9. Custom UI components (on top of shadcn)
 
-- [ ] `components/ui/Stat.tsx` — Dashboard metric card. Props: label, value, trend (number with arrow), icon (LucideIcon). Used on all dashboards.
-- [ ] `components/ui/PageHeader.tsx` — Consistent page title block. Props: title, subtitle, optional action button (ReactNode). Used at the top of every page.
-- [ ] `components/ui/ConfirmDialog.tsx` — Wraps shadcn Dialog for destructive action confirmations. Props: open, onConfirm, onCancel, title, description, variant (danger or warning). Used for cancel sale, deactivate employee, delete record, etc.
+- [x] `components/ui/Stat.tsx` — Dashboard metric card. Props: label, value, trend (number with arrow), icon (LucideIcon). Used on all dashboards.
+- [x] `components/ui/PageHeader.tsx` — Consistent page title block. Props: title, subtitle, optional action button (ReactNode). Used at the top of every page.
+- [x] `components/ui/ConfirmDialog.tsx` — Wraps shadcn Dialog for destructive action confirmations. Props: open, onConfirm, onCancel, title, description, variant (danger or warning). Used for cancel sale, deactivate employee, delete record, etc.
 
 ### 10. Login page
 
-- [ ] `app/(auth)/login/page.tsx` — Email + password login form using Supabase Auth. On success: fetches users record, stores session in auth.store, redirects to the correct dashboard based on role.
+- [x] `app/(auth)/login/page.tsx` — Email + password login form using Supabase Auth. On success: fetches users record, stores session in auth.store, redirects to the correct dashboard based on role.
 
 ### 11. Unauthorized page
 
-- [ ] `app/unauthorized/page.tsx` — Simple page shown when a user tries to access a route outside their role. Shows their current role and a button to go back to their dashboard.
+- [x] `app/unauthorized/page.tsx` — Simple page shown when a user tries to access a route outside their role. Shows their current role and a button to go back to their dashboard.
 
 ### 12. Role layouts
 
-- [ ] `app/admin/layout.tsx` — Admin layout with Sidebar and TopBar. Wraps all /admin/* pages.
-- [ ] `app/supervisor/layout.tsx` — Supervisor layout with Sidebar and TopBar. Wraps all /supervisor/* pages.
-- [ ] `app/cashier/layout.tsx` — Cashier layout with Sidebar and TopBar. Wraps all /cashier/* pages.
-- [ ] `app/employee/layout.tsx` — Employee layout with Sidebar and TopBar. Wraps all /employee/* pages.
+- [x] `app/admin/layout.tsx` — Admin layout with Sidebar and TopBar. Wraps all /admin/* pages.
+- [x] `app/supervisor/layout.tsx` — Supervisor layout with Sidebar and TopBar. Wraps all /supervisor/* pages.
+- [x] `app/cashier/layout.tsx` — Cashier layout with Sidebar and TopBar. Wraps all /cashier/* pages.
+- [x] `app/employee/layout.tsx` — Employee layout with Sidebar and TopBar. Wraps all /employee/* pages.
 
 ---
 
@@ -83,21 +84,21 @@
 
 ### 13. API routes + tests
 
-- [ ] `app/api/shifts/open/route.ts` — POST. Minimum role: CASHIER. Verifies no OPEN shift exists for the company. Records opened_by, opened_at, opening_cash. Returns created shift.
-- [ ] `app/api/shifts/close/route.ts` — POST. Minimum role: CASHIER. Computes totals from all sales in the shift. Warns if total_unassigned > 0. Records closed_by, closed_at. Returns closed shift with summary.
-- [ ] `tests/api/shifts.test.ts` — Full coverage: happy path, 401/403/cross-company, validation (missing opening_cash), business rules (shift already open, no open shift to close).
+- [x] `app/api/shifts/open/route.ts` — POST. Minimum role: CASHIER. Verifies no OPEN shift exists for the company. Records opened_by, opened_at, opening_cash. Returns created shift.
+- [x] `app/api/shifts/close/route.ts` — POST. Minimum role: CASHIER. Computes totals from all sales in the shift. Warns if total_unassigned > 0. Records closed_by, closed_at. Returns closed shift with summary.
+- [x] `tests/api/shifts.test.ts` — Full coverage: happy path, 401/403/cross-company, validation (missing opening_cash), business rules (shift already open, no open shift to close).
 
 ### 14. Service
 
-- [ ] `services/shifts.service.ts` — getActiveShift(companyId): returns the current OPEN shift or null. openShift(input): creates new shift record. closeShift(shiftId, userId): computes totals, updates status to CLOSED.
+- [x] `services/shifts.service.ts` — getActiveShift(companyId): returns the current OPEN shift or null. openShift(input): creates new shift record. closeShift(shiftId, userId): computes totals, updates status to CLOSED.
 
 ### 15. Schema
 
-- [ ] `lib/validations/shift.schema.ts` — openShiftSchema: { opening_cash: number >= 0 }. closeShiftSchema: { notes?: string }.
+- [x] `lib/validations/shift.schema.ts` — openShiftSchema: { opening_cash: number >= 0 }. closeShiftSchema: { notes?: string }.
 
 ### 16. UI
 
-- [ ] `app/cashier/shift/page.tsx` — Shows current shift status. If no shift open: form to open a new one with opening_cash input. If shift open: summary of current totals and button to close. Warns before closing if there are unassigned services.
+- [x] `app/cashier/shift/page.tsx` — Shows current shift status. If no shift open: form to open a new one with opening_cash input. If shift open: summary of current totals and button to close. Warns before closing if there are unassigned services.
 
 ---
 
